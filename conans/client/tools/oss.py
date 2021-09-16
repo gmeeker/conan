@@ -465,8 +465,7 @@ def cross_building(conanfile=None, self_os=None, self_arch=None, skip_x64_x86=Fa
         raise ConanException("Do not set both arguments, 'conanfile' and 'settings',"
                              " to call cross_building function")
 
-    from conans.model.conan_file import ConanFile
-    if conanfile and not isinstance(conanfile, ConanFile):
+    if conanfile and hasattr(conanfile, "get_safe") and not conanfile.get_safe("settings"):
         return cross_building(settings=conanfile, self_os=self_os, self_arch=self_arch,
                               skip_x64_x86=skip_x64_x86)
 

@@ -132,9 +132,7 @@ MSVS_DEFAULT_TOOLSETS_INVERSE = {"v143": "17",
 
 
 def msvs_toolset(conanfile):
-    from conans.model.conan_file import ConanFile
-
-    if isinstance(conanfile, ConanFile):
+    if not hasattr(conanfile, "get_safe") or conanfile.get_safe("settings"):
         settings = conanfile.settings
     else:
         settings = conanfile
@@ -375,8 +373,7 @@ def vcvars_command(conanfile=None, arch=None, compiler_version=None, force=False
         raise ConanException("Do not set both arguments, 'conanfile' and 'settings',"
                              " to call 'vcvars_command' function")
 
-    from conans.model.conan_file import ConanFile
-    if conanfile and not isinstance(conanfile, ConanFile):
+    if conanfile and hasattr(conanfile, "get_safe") and not conanfile.get_safe("settings"):
         return vcvars_command(settings=conanfile, arch=arch, compiler_version=compiler_version,
                               force=force, vcvars_ver=vcvars_ver, winsdk_version=winsdk_version,
                               output=output)

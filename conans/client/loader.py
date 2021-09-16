@@ -33,6 +33,8 @@ class ConanFileLoader(object):
         sys.modules["conans"].python_requires = python_requires
         self._cached_conanfile_classes = {}
         self._requester = requester
+        self._middleware = []
+        self._middleware_paths = {}
 
     def load_basic(self, conanfile_path, lock_python_requires=None, user=None, channel=None,
                    display=""):
@@ -202,6 +204,18 @@ class ConanFileLoader(object):
         conanfile.initialize(tmp_settings, profile.env_values, profile.buildenv)
         conanfile.conf = profile.conf.get_conanfile_conf(ref_str)
 
+    def _initialize_middleware(self, conanfile, conanfile_path):
+        if hasattr(conanfile, "middleware") and callable(conanfile.middleware):
+            if self._middleware_paths.get(conanfile_path):
+                return
+            self._middleware_paths[conanfile_path] = True
+            with conanfile_exception_formatter(str(conanfile), "middleware"):
+                middleware = conanfile.middleware()
+                if callable(middleware):
+                    self._middleware.append(middleware)
+                elif middleware:
+                    self._middleware += list(middleware)
+
     def load_consumer(self, conanfile_path, profile_host, name=None, version=None, user=None,
                       channel=None, lock_python_requires=None, require_overrides=None):
         """ loads a conanfile.py in user space. Might have name/version or not
@@ -255,6 +269,7 @@ class ConanFileLoader(object):
             conanfile.develop = True
         try:
             self._initialize_conanfile(conanfile, profile)
+            self._initialize_middleware(conanfile, conanfile_path)
             return conanfile
         except ConanInvalidConfiguration:
             raise
@@ -347,6 +362,16 @@ class ConanFileLoader(object):
         conanfile.generators = []  # remove the default txt generator
         return conanfile
 
+    def get_middleware(self):
+        return self._middleware
+
+    def apply_middleware(self, conanfile):
+        result = conanfile
+        # Don't apply middlewares to middleware conanfiles
+        if isinstance(conanfile, ConanFile) and not hasattr(conanfile, "middleware"):
+            for middleware in self._middleware:
+                result = middleware(result)
+        return result
 
 def _parse_module(conanfile_module, module_id, generator_manager):
     """ Parses a python in-memory module, to extract the classes, mainly the main

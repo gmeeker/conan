@@ -389,6 +389,11 @@ class GraphManager(object):
                                      profile_build, graph_lock,
                                      apply_build_requires=apply_build_requires)
 
+        # Apply middleware to nodes
+        if self._loader.get_middleware():
+            for node in graph.nodes:
+                node.conanfile = self._loader.apply_middleware(node.conanfile)
+
         # Sort of closures, for linking order
         inverse_levels = {n: i for i, level in enumerate(graph.inverse_levels()) for n in level}
         for node in graph.nodes:

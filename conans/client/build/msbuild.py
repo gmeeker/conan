@@ -10,7 +10,6 @@ from conans.client.tools.intel import intel_compilervars
 from conans.client.tools.oss import cpu_count
 from conans.client.tools.win import vcvars_command
 from conans.errors import ConanException
-from conans.model.conan_file import ConanFile
 from conans.model.version import Version
 from conans.tools import vcvars_command as tools_vcvars_command
 from conans.util.env_reader import get_env
@@ -21,7 +20,7 @@ from conans.util.runners import version_runner
 class MSBuild(object):
 
     def __init__(self, conanfile):
-        if isinstance(conanfile, ConanFile):
+        if not hasattr(conanfile, "get_safe") or conanfile.get_safe("settings"):
             self._conanfile = conanfile
             self._settings = self._conanfile.settings
             self._output = self._conanfile.output
